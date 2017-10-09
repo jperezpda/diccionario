@@ -1,10 +1,3 @@
-<html>
-<head>
-<title>
-prueba json
-</title>
-</head>
-<body>
 <?php
 
 $db = new SQLite3('ppluis.db'); 
@@ -22,5 +15,4 @@ while($res = $result->fetchArray(SQLITE3_ASSOC)) {
     }
     echo json_encode($row);
 ?>
-</body>
-<html>
+
