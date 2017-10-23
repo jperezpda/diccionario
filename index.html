@@ -2,32 +2,136 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=0.75">
     <title>Diccionario</title>
-    <link rel="stylesheet" href="js/jquery.mobile-1.4.5.min.css">
+    
     <script src="js/jquery.js"></script>
-    <script src="_assets/js/index.js"></script>
     <script src="js/jquery.mobile-1.4.5.min.js"></script>
+    <link rel="stylesheet" href="js/jquery.mobile-1.4.5.min.css">
+    
     <script type="text/javascript" >
         $(document).ready(function() {
-            $.getJSON("prueba.php", function(result){
-                $.each(result, function(i, field){
-                    $("#lista").append(field.ingles + " " . field.espanol);
+            
+            $('#textIngles').css('textTransform', 'capitalize');
+            
+            $.getJSON("prueba.php", function(data){
+                tag_a_open = "<a href='#English' class='ui-btn ui-corner-all ui-shadow ui-btn-inline' data-rel='popup'>";
+                data.forEach(function(field){ 
+                    $("#lista").append( tag_a_open + field.ingles + "</a> ");
                 });
             });
+            
+            // captura el click en el boton que contiene la palabra en ingles
+            $("#lista").on("click", ".ui-btn", function(){
+                $.getJSON("traducir.php", { english : $(this).text() } ,function(data){
+                    data.forEach(function(field){ 
+                        $("#Spanish").text(field.espanol);
+                    });
+                });                
+            });
+            
+/*
+    Despues que se muestra el dialogo, se limpian los campos
+    y se le da el focos al cambio Ingles.
+*/
+            $( "#agregar" ).popup({
+                afteropen: function( event, ui ) {
+                    $( "#textIngles" ).val("");
+                    $( "#textEspanol" ).val("");
+                    $( "#textModo" ).val("add");
+                    $( "#btnGuardar" ).text("Guardar");  // tag "a" como boton
+                    $( "#textIngles" ).focus();
+                }
+            });
+
+// Ejecutar accion al perder el foco el campo ingles
+            $( "#textIngles" )
+                .focusout(function() {
+                    $.getJSON("traducir.php", { english : $( "#textIngles" ).val() } ,function(data){
+                        data.forEach(function(field){ 
+                            if ( field.espanol === "add" ) {
+                                $( "#textEspanol" ).val("");
+                                $( "#textModo" ).val("add");
+                                $( "#btnGuardar" ).text("Guardar");  // tag "a" como boton                                                            
+                            } else {
+                                $( "#textEspanol" ).val(field.espanol);
+                                $( "#textModo" ).val("update");
+                                $( "#btnGuardar" ).text("Actualizar");  // tag "a" como boton    
+                            }     
+                        });
+                    });
+                    
+                });
+            
+            $("#btnGuardar").click(function(){
+                var datos = $( "#frmDatos" ).serialize();
+                $.post(
+                    "save.php",
+                    datos
+                );
+      
+    // ---------------------------------------------------------------------------------------------------------------
+    //
+    // sigue faltando hacer mayuscula la primera letra (capitalizar)
+    //
+    // ---------------------------------------------------------------------------------------------------------------
+                
+                palabra = $("#textIngles").val();
+                link = "<a href='#English' class='ui-btn ui-corner-all ui-shadow ui-btn-inline' data-rel='popup'>" + palabra + "</a>";
+                
+                $("#lista a").each( function() { 
+                    if ( $(this).text().localeCompare(palabra) == 1  ) { 
+                        $(link).insertBefore( $(this) ); 
+                        return false; 
+                        
+//  $("<a href='#English' class='ui-btn ui-corner-all ui-shadow ui-btn-inline' data-rel='popup'>" + palabra + "</a>").insertBefore("")
+                        
+                        
+                    }   
+                });
+                
+            });
+            
         });	
     </script>
+    
 </head>
 <body>
 	
     <div data-role="page" id="pageone">
-        <div data-role="header">
+        <div data-role="header" data-position="fixed">
             <h1>Diccionario</h1>
+            <a href="#agregar" id="btnAgregar" class="ui-btn-right ui-btn ui-btn-inlice ui-mini ui-corner-all ui-btn-icon-right ui-icon-plus" data-rel='popup'>Agregar</a>
         </div>
 
         <div data-role="main" class="ui-content">
-            <p>Palabras aprendidas</p>
-            <div id="lista"></div>
+            
+            <!-- Aqui se mostrara la lista de palabras en ingles -->
+            <div id="lista">   </div>   
+            
+            
+            <!-- Popup donde se motrara la traduccion de la palabra seleccionada -->
+            <div data-role='popup' id='English' class='ui-content' data-theme='a' data-transition='flip'>
+                <p id="Spanish"></p>
+            </div>  <!-- Fin del Popup -->  
+            
+            
+            <!-- Dialogo para agregar o actualizar la traduccion de las palabras en Ingles -->
+            <div data-role="popup" id="agregar" data-theme="a" data-overlay-theme="b" class="ui-content" style="max-width:340px; padding-bottom:2em;">
+                <h3>Nueva Palabra</h3>
+                                
+                <form id="frmDatos">
+                    <label for="textIngles">Ingles:</label>
+                    <input name="textIngles" id="textIngles" value="" type="text" placeholder="Ingles" data-clear-btn="true">
+                    <label for="textEspanol">Espanol:</label>
+                    <input name="textEspanol" id="textEspanol" value="" type="text" placeholder="Espanol" data-clear-btn="true">
+                    <input name="modo" id="textModo" value="add" type="hidden">
+                </form>
+                
+                <a href="" data-rel="back" class="ui-shadow ui-btn ui-corner-all ui-btn-b ui-icon-check ui-btn-icon-left ui-btn-inline ui-mini" id="btnGuardar">Guardar</a>
+                <a href="" data-rel="back" class="ui-shadow ui-btn ui-corner-all ui-icon-delete ui-btn-icon-left ui-btn-inline ui-mini">Cancelar</a>
+            </div>  <!-- Fin del Dialogo -->
+                
         </div>
 
         <div data-role="footer" data-position="fixed">
